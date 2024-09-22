@@ -1,187 +1,339 @@
-#include <iostream>
-#include <random>
+#include "iostream"
+#define STEP_CAPACITY 15
 
-using namespace std;
+enum State { empty, busy, deleted };
 
-void itog_system(long double** matrix, int size){
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size; j++){
-            cout << matrix[i][j]; cout << "*x"; cout << j+1;
-            if (j!=size-1)
-                cout << " + ";}
-        cout << " = "; cout << matrix[i][size] << endl;}
-    cout << endl;
-}
+template<typename T>
+class TDMassive{
+    T* _data;                  
+    State* _states;
+    size_t _capacity;        
+    size_t _size;              
+    size_t _deleted;           
+    public:
+        TDMassive();
+        TDMassive(const TDMassive& archive);
+        TDMassive(const T* arr, size_t n);
+        TDMassive(size_t n, T value);
+        TDMassive(const TDMassive& archive, size_t pos, size_t n);
 
-void itog_reshenie(long double** matrix, int* hoh, int size){
-    cout << hoh[0] << " "; cout << hoh[1] << " ";
-    cout << "Itogovoe Reshenie: " << endl;
-    for (int i = 0; i<size; i++){
-        if (hoh[0] == i+1){
-            cout << "x"; cout << hoh[1] << " = "; cout << matrix[i][size]/matrix[i][i] << endl;}
-        if (hoh[1] == i+1){
-            cout << "x"; cout << hoh[0] << " = "; cout << matrix[i][size]/matrix[i][i] << endl;}
-        if (hoh[0]!=i+1 && hoh[1]!=i+1){
-            cout << "x"; cout << i+1 << " = "; cout << matrix[i][size]/matrix[i][i] << endl;}}
-}
+        ~TDMassive();
 
-void print_matrix_gaussa(long double** matrix, int size){
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size+1; j++){
-            std::cout << matrix[i][j] << " ";}
-        std::cout << "\n";}
-    std::cout << "\n";
-}
+        void print() const noexcept;
 
-void vector_neviazki(long double** matrix, long double** matrix_copy, long double* vector_b,  int size){
-    long double* mas = new long double [size];
-    long double* array = new long double [size];
-    for (int i = 0; i<size; i++){
-        mas[i] = matrix[i][size]/matrix[i][i];}
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size; j++){
-            array[i]+= matrix_copy[i][j]*mas[j];}}
-    cout << "Vector neviazki: " << endl; 
-    for (int i = 0; i<size; i++){
-        cout << vector_b[i] - array[i] << " ";}
-    cout << "\n" << endl;
-    delete[] mas;
-    delete[] array;
-}
+        inline bool empty() const noexcept;
+        inline bool full() const noexcept;
 
-int replace_zero(long double** matrix, int size, int col, int b_col, int* hoh){
-    int no_zero = 0;
-    for (int j = 0; j<size; j++){
-        if (matrix[col][j]!=0)
-            no_zero = j;}
-    
-    if (no_zero == 0){
-        cout << "Система: " << endl;
-        itog_system(matrix, size);
-        if (b_col == 0){
-            cout << "имеет множество решений" << endl;}
-        else {
-            cout << "не имеет решений" << endl;}
-        return 1;}
-    hoh[0] = b_col; hoh[1] = no_zero+1;
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size; j++){
-            if (j == no_zero){
-                long double a = matrix[i][col];
-                matrix[i][col] = matrix[i][j];
-                matrix[i][j] = a;}}}
-    return 0;
-}
+        size_t size();
+        size_t capacity();
+        const T* data();
 
-int reverse_method_gaussa(long double** matrix, int size, int* hoh){
-    cout << "Reverse Method Gaussa: " << endl;
-    long double ved_elem = 0;
-    for (int i = 0; i<size; i++){
-        if (matrix[i][i] == 0){
-            if (replace_zero(matrix, size, i, matrix[i][size], hoh) == 1){
-                return 1;}}
-        ved_elem = matrix[i][i];
-        print_matrix_gaussa(matrix, size);
-        for (int j = 0; j<size; j++){
-            long double subtra = matrix[j][i]/ved_elem;
-            if (j!=i){
-                for(int k = 0; k<size+1; k++){
-                    matrix[j][k] = matrix[j][k]-(subtra*matrix[i][k]);}}}}
-    print_matrix_gaussa(matrix, size);
-    return 0;
-}
+        void overexposure();
 
-void straight_method_gaussa(long double** matrix, int size, int* hoh){
-    cout << "Straight Method Gaussa: " << endl;
-    long double ved_elem = 0;
-    for (int i = 0; i<size; i++){
-        if (matrix[i][i] == 0){
-            if (replace_zero(matrix, size, i, matrix[i][size], hoh) == 1){
-                break;}}
-        ved_elem = matrix[i][i];
-        print_matrix_gaussa(matrix, size);
-        for (int j = 0; j<size; j++){
-            long double subtra = matrix[j][i]/ved_elem;
-            if (j>i){
-                for(int k = 0; k<size+1; k++){
-                    matrix[j][k] = matrix[j][k]-(subtra*matrix[i][k]);}}}}
-    print_matrix_gaussa(matrix, size);
-}
+        void push_back(T value);
 
-int main(){
-    int size, a;
-    random_device rd; mt19937 gen(rd()); uniform_int_distribution<> dist(-9,9);
-    std::cout << "Введите размер массива: " << endl; cin >> size;
-    int* hoh = new int [2];
-    long double** matrix = new long double* [size];
-    long double** matrix_copy = new long double* [size];
-    long double** matrix_copy2 = new long double* [size];
-    long double* vector_b = new long double [size];
-    for (int i = 0; i<size; i++){
-        matrix[i] = new long double [size+1];}
-    for (int i = 0; i<size; i++){
-        matrix_copy[i] = new long double [size+1];}
-    for (int i = 0; i<size; i++){
-        matrix_copy2[i] = new long double [size+1];}
+        void pop_back();
 
+        void push_front(T value);
 
-    std::cout << "Начальная матрица: " << endl;
-    /*for (int i = 0; i<size; i++){
-        for (int j = 0; j<size+1; j++){
-            matrix[i][j] = dist(gen); vector_b[i] = matrix[i][j]; cout << matrix[i][j] << " ";}
-        cout << "\n";}
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size; j++){
-            matrix_copy[i][j] = matrix[i][j];}}
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size+1; j++){
-            matrix_copy2[i][j] = matrix[i][j];}}*/
+        void pop_front();
 
-            
-    long double arr[size*size+size] = {0};
-    
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size+1; j++){
-            cout << "arr"; cout << "["; cout << j+(i*(size+1)); cout << "] = "; cin >> a; cout << endl;
-            matrix[i][j] = a; 
-            vector_b[i] = matrix[i][j];
-            }
-        cout << "\n";}
+        TDMassive& insert(T value, size_t pos);
 
-    cout << "Начальная маьрица:" << endl;
-    
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size+1; j++){
-            cout << matrix[i][j] << " ";}
-        cout << endl;}
+        TDMassive& replace(size_t pos, T new_value); 
 
-        
-    
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size; j++){
-            matrix_copy[i][j] = matrix[i][j];}}
-    for (int i = 0; i<size; i++){
-        for (int j = 0; j<size+1; j++){
-            matrix_copy2[i][j] = matrix[i][j];}}
-    std::cout << "\n";
+        TDMassive& remove_all(T value);
 
+        TDMassive& remove_last(T value);
 
+        TDMassive& remove_by_index(size_t pos);
 
-    if (reverse_method_gaussa(matrix, size, hoh) == 0){
-        itog_system(matrix, size);
-        straight_method_gaussa(matrix_copy2, size, hoh);
-        itog_system(matrix_copy2, size);
-        vector_neviazki (matrix, matrix_copy, vector_b, size);
-        itog_reshenie (matrix, hoh, size);}
-    
-    for (int i = 0; i<size; i++){
-        delete[] matrix[i]; 
-        delete[] matrix_copy[i]; 
-        delete[] matrix_copy2[i];
+        size_t* find_all(T value) const noexcept;
+
+        size_t find_first(T value);
+
+        size_t find_last(T value);
+
+private:
+    size_t count_value(T value); //????????
+};
+
+template <typename T>
+TDMassive<T>::TDMassive() {
+    _size = 0;
+    _capacity = STEP_CAPACITY;
+    _data = new T[_capacity];
+    _states = new State[_capacity];
+    for (size_t i = 0; i < STEP_CAPACITY; i++) {
+        _states[i] = State::empty;
     }
-    delete[] matrix; 
-    delete[] matrix_copy; 
-    delete[] matrix_copy2; 
-    delete[] vector_b;
-    int s = 0;
 }
+
+template <typename T>
+TDMassive<T>::TDMassive(const TDMassive& archive){
+    _size = archive._size;
+    _capacity = archive._capacity;
+    _deleted = archive._deleted;
+    for (size_t i = 0; i<_capacity; i++){
+        _data[i] = archive._data[i];
+        _states[i] = archive._states[i]
+    }
+}
+
+template <typename T>
+TDMassive<T>::TDMassive(const T* arr, size_t n){
+    _size = n;
+    _capacity = (n/15+1)*15;
+    _deleted = 0;
+    _data = new T[_capacity];
+    _states = new State[_capacity];
+    for (size_t i = 0; i<_capacity; i++){
+        if (i<n){
+            _data[i] = arr[i];
+            _states[i] = State::busy;}
+        else{
+            _states[i] = State::empty;}
+    }
+}
+
+template <typename T>
+TDMassive<T>::TDMassive(size_t n, T value){
+    _size = n;
+    _capacity = (n/15+1)*15;
+    _deleted = 0;
+    _data = new T[_capacity];
+    _states = new State[_capacity];
+    for (size_t i = 0; i<_capacity; i++){
+        if (i<n){
+            _data[i] = value;
+            _states[i] = State::busy;}
+        else{
+            _states[i] = State::empty;}
+    }
+}
+
+template <typename T>
+TDMassive<T>::TDMassive(const TDMassive& archive, size_t pos, size_t n){
+    _size = n;
+    _capacity = (n/15+1)*15;
+    _deleted = 0;
+    _data = new T[_capacity];
+    _states = new State[_capacity];
+    for (size_t i = 0; i<_capacity; i++){
+        if (i<n){
+            _data[i] = archive[i+pos-1];
+            _states[i] = State::busy;}
+        else{
+            _states[i] = State::empty;}
+    }
+}
+
+template <typename T>
+TDMassive<T>::~TDMassive() {
+    delete[] _data;
+    _data = nullptr;
+}
+
+template <typename T>
+void TDMassive<T>::print() const noexcept {
+    for (size_t i = 0; i < _size; i++) {
+        if (_states[i] != State::deleted) {
+            std::cout << _data[i] << ", ";
+        }
+    }
+}
+
+template <typename T>
+inline bool TDMassive<T>::empty() const noexcept {
+    return _size == 0;
+}
+
+template <typename T>
+inline bool TDMassive<T>::full() const noexcept {
+    return _size == _capacity;
+}
+
+template <typename T>
+size_t TDMassive<T>::size(){
+    return _size;
+}
+
+template <typename T>
+size_t TDMassive<T>::capacity(){
+    return _capacity;
+}
+
+template <typename T>
+const T* TDMassive<T>::data(){
+    return data;
+}
+
+template <typename T>
+void TDMassive<T>::overexposure(){
+    if (_deleted == 0){
+        _capacity+=15;
+        int* array = new T[_size];
+        _states = new State[_capacity];
+        for(size_t i = 0; i < _capacity; i++){
+            if (i<_size){
+                array[i] = _data[i];
+                _states[i] = State::busy;}
+            else{
+                _states[i] = State::empty;}}
+        delete[] _data;
+        _data = new T[_capacity];
+        _data = array;
+    }
+    else{
+        int count = 0;
+        for (size_t i = _size-1; i>=0; i--){
+            if (_states[i] == State::deleted)
+                count++;
+            else if (count!=0) {
+                for (size_t j = i+count+1; j<_size; j++){
+                    _data[j-count] = _data[j];
+                    _states[j] = State::empty;
+                    _states[j-count] = State::busy;
+                }
+                _size -=count;
+                count = 0;}
+        }
+    }
+}
+
+template <typename T>
+void TDMassive<T>::push_back(T value){
+    if (_size == _capacity){
+        overexposure();}
+    _data[_size-1] = value;
+    _states[_size-1] = State::busy;
+}
+
+template <typename T>
+void TDMassive<T>::pop_back(){ 
+    _size--;
+    _states[_size-1] = State::empty;
+}
+
+template <typename T>
+void TDMassive<T>::push_front(T value){ //????
+    if (_size == _capacity){
+        overexposure();}
+    for (size_t i = _size-1; i>=0; i--){
+        if (_states[i]!=State::deleted){
+            _data[i+1] = _data[i];
+            _states[i+1] = State::busy;
+        }
+    }
+}
+
+
+template <typename T>
+void TDMassive<T>::pop_front(){ //что быстрее
+    if (_states[0]!=State::deleted){
+        _states[0] = State::deleted;
+        _deleted+=1;
+    }
+    if (double(_deleted)*100/double(_size) >= 40){ 
+        overexposure();
+    }
+}
+
+template <typename T> //может быть не правильно
+TDMassive<T>& TDMassive<T>::insert(T value, size_t pos) {
+    if (_size < pos) {
+        throw std::logic_error("Error in function \
+\"TArchive<T>& insert(T value, size_t pos)\": wrong position value.");
+    }
+    for (size_t i = _size; i > pos; i--) {
+        _data[i] = _data[i - 1];
+    }
+    _data[pos] = value;
+    _states[pos] = State::busy;
+    _size++;
+    return *this;
+}
+
+template <typename T>
+TDMassive<T>& TDMassive<T>::replace(size_t pos, T new_value){
+    _data[pos] = new_value;
+    _states[pos] = State::busy;
+    return *this;
+}
+
+template <typename T>
+TDMassive<T>& TDMassive<T>::remove_all(T value){
+    for (size_t i = 0; i<_size; i++){
+        if (_data[i] == value){
+            if (i == _size-1)
+                _states[i] = State::empty;
+            else{
+                _states[i] = State::deleted;
+                _deleted+=1;}
+        }
+    }
+    if (double(_deleted)*100/double(_size) >= 40){ 
+        overexposure();
+    }
+    return *this;
+}
+
+template <typename T>
+
+TDMassive<T>& TDMassive<T>::remove_all(T value){
+    for (size_t i = 0; i<_size; i++){
+        if (_data[i] == value){
+            if (i == _size-1)
+                _states[i] = State::empty;
+            else{
+                _states[i] = State::deleted;
+                _deleted+=1;}
+            break;
+        }
+    }
+    if (double(_deleted)*100/double(_size) >= 40){ 
+        overexposure();
+    }
+    return *this;
+}
+
+template <typename T>
+TDMassive<T>& TDMassive<T>::remove_by_index(size_t pos){
+    if (_size == pos+1)
+        _states[pos] = State::empty;
+    else{
+        _states[pos] = State::deleted;
+        _deleted+=1;}
+    if (double(_deleted)*100/double(_size) >= 40){ 
+        overexposure();
+    }
+    return *this;
+}
+
+template <typename T>
+size_t* TDMassive<T>::find_all(T value) const noexcept{
+    size_t total = 0;
+    for (size_t i = 0; i<_size; i++){
+        if (_data[i] = value) total++;
+    }
+    return total;
+}
+
+template <typename T>
+size_t TDMassive<T>::find_first(T value){
+    for (size_t i = 0; i<_size; i++){
+        if (_data[i] = value) return i;
+    }
+}
+
+template <typename T>
+size_t TDMassive<T>::find_last(T value){
+    for (size_t i = _size; i>0; i--){
+        if (_data[i] = value) return i;
+    }
+}
+
+
+
+
+
