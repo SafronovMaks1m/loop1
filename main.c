@@ -1,339 +1,406 @@
+#include "node.h"
 #include "iostream"
-#define STEP_CAPACITY 15
+#include "execution"
+#include <chrono>
 
-enum State { empty, busy, deleted };
+template <class T>
+class Tlist {
+private: 
+    class TIterator <T> s;
+public:
+    TNode<T>* _head;
+    TNode<T>* _tail;
+public:
+    typedef TIterator<T> iterator;
+    Tlist();
+    Tlist(const Tlist<T>& list);
+    Tlist<T>& operator=(const Tlist<T>& list);
+    ~Tlist();
+    void push_front(const T& value) noexcept;
+    void push_back(const T& value) noexcept;
+    void insert(TNode<T>* node, T value);
+    void insert(size_t pos, T value);
+    TNode<T>* find(const T& value) const noexcept;
+    TNode<T>* find_pos(size_t pos) const;
+    TNode<T>* find_pres(TNode<T>* node) const noexcept;
+    void pop_front();
+    void pop_back();
+    TIterator<T> begin() {
 
-template<typename T>
-class TDMassive{
-    T* _data;                  
-    State* _states;
-    size_t _capacity;        
-    size_t _size;              
-    size_t _deleted;           
-    public:
-        TDMassive();
-        TDMassive(const TDMassive& archive);
-        TDMassive(const T* arr, size_t n);
-        TDMassive(size_t n, T value);
-        TDMassive(const TDMassive& archive, size_t pos, size_t n);
+    }
 
-        ~TDMassive();
-
-        void print() const noexcept;
-
-        inline bool empty() const noexcept;
-        inline bool full() const noexcept;
-
-        size_t size();
-        size_t capacity();
-        const T* data();
-
-        void overexposure();
-
-        void push_back(T value);
-
-        void pop_back();
-
-        void push_front(T value);
-
-        void pop_front();
-
-        TDMassive& insert(T value, size_t pos);
-
-        TDMassive& replace(size_t pos, T new_value); 
-
-        TDMassive& remove_all(T value);
-
-        TDMassive& remove_last(T value);
-
-        TDMassive& remove_by_index(size_t pos);
-
-        size_t* find_all(T value) const noexcept;
-
-        size_t find_first(T value);
-
-        size_t find_last(T value);
-
+    void erase(TNode <T>* node);
+    void erase(size_t pos);
+    bool isEmpty() const noexcept;
+    void replace(TNode<T>* node, T value) const;
+    void replace(size_t pos, T value) const;
+    int get_size() const noexcept;
+    void print() const noexcept;
+    void qsort() noexcept;
+    bool check_cycle_rabbit_turtle() noexcept;
+    bool check_cycle_reverse_list() noexcept;
+    long int test_time_algorithm_rabbit_turtle() noexcept;
+    long int test_time_algorithm_reverse_list() noexcept;
 private:
-    size_t count_value(T value); //????????
+    template <class T>
+    class TIterator {
+        TNode<T>* _pcur;
+        public:
+            TIterator() {
+                _pcur = _head;
+            }
+            TIterator(TIterator<T> iter) {
+                _pcur = iter._pcur;
+            }
+            TIterator<T>& operator++() {
+                TIterator<T> prev = new TIterator<T>(*this);
+                _pcur = _pcur->next();
+                return *prev;
+            }
+            TIterator<T> operator++(TIterator<T>& iter) {
+                iter._pcur = _pcur->next();
+                return iter;
+            }
+            bool operator!=(const TIterator<T>& iter) const noexcept {
+                return this != nullptr;
+            }
+            bool operator==(const TIterator<T>& iter) const noexcept {
+                return (*this)._pcur->value() == iter._pcur->value();
+            }
+    };
 };
 
-template <typename T>
-TDMassive<T>::TDMassive() {
-    _size = 0;
-    _capacity = STEP_CAPACITY;
-    _data = new T[_capacity];
-    _states = new State[_capacity];
-    for (size_t i = 0; i < STEP_CAPACITY; i++) {
-        _states[i] = State::empty;
-    }
+template <class T>
+Tlist<T>::Tlist() {
+    _head = _tail = nullptr;
 }
 
-template <typename T>
-TDMassive<T>::TDMassive(const TDMassive& archive){
-    _size = archive._size;
-    _capacity = archive._capacity;
-    _deleted = archive._deleted;
-    for (size_t i = 0; i<_capacity; i++){
-        _data[i] = archive._data[i];
-        _states[i] = archive._states[i]
-    }
+template <class T>
+Tlist<T>::Tlist(const Tlist<T>& list) {
+    _head = list._head;
+    _tail = list._tail;
 }
 
-template <typename T>
-TDMassive<T>::TDMassive(const T* arr, size_t n){
-    _size = n;
-    _capacity = (n/15+1)*15;
-    _deleted = 0;
-    _data = new T[_capacity];
-    _states = new State[_capacity];
-    for (size_t i = 0; i<_capacity; i++){
-        if (i<n){
-            _data[i] = arr[i];
-            _states[i] = State::busy;}
-        else{
-            _states[i] = State::empty;}
-    }
-}
-
-template <typename T>
-TDMassive<T>::TDMassive(size_t n, T value){
-    _size = n;
-    _capacity = (n/15+1)*15;
-    _deleted = 0;
-    _data = new T[_capacity];
-    _states = new State[_capacity];
-    for (size_t i = 0; i<_capacity; i++){
-        if (i<n){
-            _data[i] = value;
-            _states[i] = State::busy;}
-        else{
-            _states[i] = State::empty;}
-    }
-}
-
-template <typename T>
-TDMassive<T>::TDMassive(const TDMassive& archive, size_t pos, size_t n){
-    _size = n;
-    _capacity = (n/15+1)*15;
-    _deleted = 0;
-    _data = new T[_capacity];
-    _states = new State[_capacity];
-    for (size_t i = 0; i<_capacity; i++){
-        if (i<n){
-            _data[i] = archive[i+pos-1];
-            _states[i] = State::busy;}
-        else{
-            _states[i] = State::empty;}
-    }
-}
-
-template <typename T>
-TDMassive<T>::~TDMassive() {
-    delete[] _data;
-    _data = nullptr;
-}
-
-template <typename T>
-void TDMassive<T>::print() const noexcept {
-    for (size_t i = 0; i < _size; i++) {
-        if (_states[i] != State::deleted) {
-            std::cout << _data[i] << ", ";
-        }
-    }
-}
-
-template <typename T>
-inline bool TDMassive<T>::empty() const noexcept {
-    return _size == 0;
-}
-
-template <typename T>
-inline bool TDMassive<T>::full() const noexcept {
-    return _size == _capacity;
-}
-
-template <typename T>
-size_t TDMassive<T>::size(){
-    return _size;
-}
-
-template <typename T>
-size_t TDMassive<T>::capacity(){
-    return _capacity;
-}
-
-template <typename T>
-const T* TDMassive<T>::data(){
-    return data;
-}
-
-template <typename T>
-void TDMassive<T>::overexposure(){
-    if (_deleted == 0){
-        _capacity+=15;
-        int* array = new T[_size];
-        _states = new State[_capacity];
-        for(size_t i = 0; i < _capacity; i++){
-            if (i<_size){
-                array[i] = _data[i];
-                _states[i] = State::busy;}
-            else{
-                _states[i] = State::empty;}}
-        delete[] _data;
-        _data = new T[_capacity];
-        _data = array;
-    }
-    else{
-        int count = 0;
-        for (size_t i = _size-1; i>=0; i--){
-            if (_states[i] == State::deleted)
-                count++;
-            else if (count!=0) {
-                for (size_t j = i+count+1; j<_size; j++){
-                    _data[j-count] = _data[j];
-                    _states[j] = State::empty;
-                    _states[j-count] = State::busy;
-                }
-                _size -=count;
-                count = 0;}
-        }
-    }
-}
-
-template <typename T>
-void TDMassive<T>::push_back(T value){
-    if (_size == _capacity){
-        overexposure();}
-    _data[_size-1] = value;
-    _states[_size-1] = State::busy;
-}
-
-template <typename T>
-void TDMassive<T>::pop_back(){ 
-    _size--;
-    _states[_size-1] = State::empty;
-}
-
-template <typename T>
-void TDMassive<T>::push_front(T value){ //????
-    if (_size == _capacity){
-        overexposure();}
-    for (size_t i = _size-1; i>=0; i--){
-        if (_states[i]!=State::deleted){
-            _data[i+1] = _data[i];
-            _states[i+1] = State::busy;
-        }
-    }
-}
-
-
-template <typename T>
-void TDMassive<T>::pop_front(){ //что быстрее
-    if (_states[0]!=State::deleted){
-        _states[0] = State::deleted;
-        _deleted+=1;
-    }
-    if (double(_deleted)*100/double(_size) >= 40){ 
-        overexposure();
-    }
-}
-
-template <typename T> //может быть не правильно
-TDMassive<T>& TDMassive<T>::insert(T value, size_t pos) {
-    if (_size < pos) {
-        throw std::logic_error("Error in function \
-\"TArchive<T>& insert(T value, size_t pos)\": wrong position value.");
-    }
-    for (size_t i = _size; i > pos; i--) {
-        _data[i] = _data[i - 1];
-    }
-    _data[pos] = value;
-    _states[pos] = State::busy;
-    _size++;
-    return *this;
-}
-
-template <typename T>
-TDMassive<T>& TDMassive<T>::replace(size_t pos, T new_value){
-    _data[pos] = new_value;
-    _states[pos] = State::busy;
-    return *this;
-}
-
-template <typename T>
-TDMassive<T>& TDMassive<T>::remove_all(T value){
-    for (size_t i = 0; i<_size; i++){
-        if (_data[i] == value){
-            if (i == _size-1)
-                _states[i] = State::empty;
-            else{
-                _states[i] = State::deleted;
-                _deleted+=1;}
-        }
-    }
-    if (double(_deleted)*100/double(_size) >= 40){ 
-        overexposure();
+template <class T>
+Tlist<T>& Tlist<T>::operator=(const Tlist<T>& list) {
+    if (&list != this) {
+        _head = list._head;
+        _tail = list._tail;
     }
     return *this;
 }
 
-template <typename T>
+template <class T>
+Tlist<T>::~Tlist() {
+    TNode<T>* cur = _head;
+    TNode<T>* to_del;
+    while (cur != nullptr) {
+        to_del = cur;
+        cur = cur->next();
+        to_del = nullptr;
+    }
 
-TDMassive<T>& TDMassive<T>::remove_all(T value){
-    for (size_t i = 0; i<_size; i++){
-        if (_data[i] == value){
-            if (i == _size-1)
-                _states[i] = State::empty;
-            else{
-                _states[i] = State::deleted;
-                _deleted+=1;}
-            break;
-        }
-    }
-    if (double(_deleted)*100/double(_size) >= 40){ 
-        overexposure();
-    }
-    return *this;
 }
 
-template <typename T>
-TDMassive<T>& TDMassive<T>::remove_by_index(size_t pos){
-    if (_size == pos+1)
-        _states[pos] = State::empty;
-    else{
-        _states[pos] = State::deleted;
-        _deleted+=1;}
-    if (double(_deleted)*100/double(_size) >= 40){ 
-        overexposure();
-    }
-    return *this;
+template <class T>
+bool Tlist<T>::isEmpty() const noexcept {
+    return _head == nullptr;
 }
 
-template <typename T>
-size_t* TDMassive<T>::find_all(T value) const noexcept{
+template<class T>
+int Tlist<T>::get_size() const noexcept {
+    TNode<T>* node = _head;
     size_t total = 0;
-    for (size_t i = 0; i<_size; i++){
-        if (_data[i] = value) total++;
+    while (node != nullptr) {
+        total++;
+        node = node->next();
     }
     return total;
 }
 
-template <typename T>
-size_t TDMassive<T>::find_first(T value){
-    for (size_t i = 0; i<_size; i++){
-        if (_data[i] = value) return i;
+template <class T>
+void Tlist<T>::insert(TNode<T>* node, T value) {
+    if (node == nullptr) {
+        throw std::logic_error("invalid pointer");
+    }
+    TNode<T>* new_node = new TNode<T>(value, node->next());
+    node->next(new_node);
+    if (node == _tail) {
+        _tail = new_node;
     }
 }
 
-template <typename T>
-size_t TDMassive<T>::find_last(T value){
-    for (size_t i = _size; i>0; i--){
-        if (_data[i] = value) return i;
+template <class T>
+void Tlist<T>::push_front(const T& value) noexcept {
+    TNode<T>* node = new TNode<T>(value);
+    if (isEmpty()) {
+        _tail = node;
+    }
+    else {
+        node->next(_head);
+    }
+    _head = node;
+}
+
+template <class T>
+void Tlist<T>::push_back(const T& value) noexcept {
+    TNode<T>* node = new TNode<T>(value);
+    if (isEmpty()) {
+        _head = node;
+    }
+    else {
+        _tail->next(node);
+    }
+    _tail = node;
+}
+
+template <class T>
+TNode<T>* Tlist<T>::find(const T& value) const noexcept {
+    TNode<T>* cur = _head;
+    while (cur != nullptr) {
+        if (cur->value() == value) {
+            return cur;
+        }
+        cur = cur->next();
+    }
+    return nullptr;
+}
+
+template <class T>
+TNode<T>* Tlist<T>::find_pos(size_t pos) const {
+    size_t total = 0;
+    TNode<T>* cur = _head;
+    while (total != pos) {
+        if (cur == nullptr)
+            throw std::logic_error("invalid pointer");
+        total++;
+        cur = cur->next();
+    }
+    return cur;
+}
+
+template <class T>
+TNode<T>* Tlist<T>::find_pres(TNode<T>* node) const noexcept {
+    TNode<T>* cur = _head;
+    while (cur->next() != node) {
+        cur = cur->next();
+    }
+    return cur;
+}
+
+template <class T>
+void Tlist<T>::insert(size_t pos, T value) {
+    if (pos<0 || pos>get_size() - 1) {
+        throw std::logic_error("invalid position");
+    }
+    TNode<T>* cur = find_pos(pos);
+    TNode<T>* node = new TNode<T>(value, cur);
+    if (cur == _head) {
+        _head = node;
+    }
+    if (cur->next() == nullptr)
+        _tail = node;
+    else {
+        TNode<T>* pred = find_pres(cur);
+        pred->next(node);
     }
 }
 
+template <class T>
+void Tlist<T>::pop_front() {
+    if (isEmpty()) {
+        throw std::logic_error("error isEmpty");
+    }
+    TNode<T>* new_head = _head->next();
+    _head = nullptr;
+    _head = new_head;
+}
 
+template <class T>
+void Tlist<T>::pop_back() {
+    if (isEmpty()) {
+        throw std::logic_error("error isEmpty");
+    }
+    else if (_head == _tail) {
+        _head = nullptr;
+    }
+    else {
+        TNode<T>* new_tail = find_pres(_tail);
+        _tail = nullptr;
+        _tail = new_tail;
+    }
+}
 
+template <class T>
+void Tlist<T>::erase(TNode <T>* node) {
+    if (node == nullptr) {
+        throw std::logic_error("invalid pointer");
+    }
+    else if (node == _head) {
+        pop_front();
+    }
+    else if (node == _tail) {
+        pop_back();
+    }
+    else {
+        TNode<T>* node_pres = find_pres(node);
+        node_pres->next(node->next());
+        node = nullptr;
+    }
+}
 
+template <class T>
+void Tlist<T>::erase(size_t pos) {
+    if (pos<0 || pos>get_size() - 1) {
+        throw std::logic_error("invalid pointer");
+    }
+    TNode <T>* cur = find_pos(pos);
+    if (cur == _head) {
+        pop_front();
+    }
+    else if (cur == _tail) {
+        pop_back();
+    }
+    else {
+        TNode <T>* pred = find_pres(cur);
+        pred->next(cur->next());
+        cur = nullptr;
+    }
+}
 
+template <class T>
+void Tlist<T>::replace(TNode<T>* node, T value) const {
+    if (node == nullptr) {
+        throw std::logic_error("invalid pointer");
+    }
+    node->value(value);
+}
+
+template <class T>
+void Tlist<T>::replace(size_t pos, T value) const {
+    if (pos<0 || pos>get_size() - 1) {
+        throw std::logic_error("invalid position");
+    }
+    TNode<T>* node = find_pos(pos);
+    node->value(value);
+}
+
+template<class T>
+void Tlist<T>::print() const noexcept {
+    TNode<T>* cur = _head;
+    while (cur != _tail) {
+        std::cout << cur->value() << " ";
+        cur = cur->next();
+    }
+    std::cout << cur->value() << std::endl;
+}
+
+// template <class T>
+// void qsort(Tlist<T> list) noexcept{
+//     int cur = list.get_size();
+//     TNode<T>* var = list._head;
+//     while(cur>0){
+//         var = list._head;
+//         while(var->next()!=nullptr){
+//             if (var->value()>(var->next()->value())){
+//                 TNode<T>* nex = var->next();
+//                 if (var == list._head){
+//                     list.insert(nex, var->value());
+//                     list._head = nullptr;
+//                     list._head = nex;
+//                 }
+//                 else{
+//                     TNode<T>* pred = list.find_pres(var);
+//                     list.insert(nex, var->value());
+//                     pred->next(nex);
+//                 }
+//                 var = nullptr;
+//                 var = nex;
+//             }
+//             var = var->next();
+//         }
+//         if (cur == 0)
+//             list._tail = var;
+//         cur--;
+//     }
+// };
+
+template <class T>
+void Tlist<T>::qsort() noexcept {
+    int cur = get_size();
+    TNode<T>* var = _head;
+    while (cur > 0) {
+        var = _head;
+        while (var->next() != nullptr) {
+            if (var->value() > (var->next()->value())) {
+                TNode<T>* nex = var->next();
+                if (var == _head) {
+                    insert(nex, var->value());
+                    _head = nullptr;
+                    _head = nex;
+                }
+                else {
+                    TNode<T>* pred = find_pres(var);
+                    insert(nex, var->value());
+                    pred->next(nex);
+                }
+                var = nullptr;
+                var = nex;
+            }
+            var = var->next();
+        }
+        if (cur == 0)
+            _tail = var;
+        cur--;
+    }
+};
+
+template<class T>
+bool Tlist<T>::check_cycle_rabbit_turtle() noexcept {
+    TNode<T>* turtle = _head;
+    TNode<T>* rabbit = _head;
+
+    while (rabbit != nullptr && rabbit->next() != nullptr) {
+        rabbit = rabbit->next()->next();
+        turtle = turtle->next();
+
+        if (rabbit == turtle) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template <class T>
+bool Tlist<T>::check_cycle_reverse_list() noexcept {
+    TNode<T>* cur = _head->next();
+    TNode<T>* prev = _head;
+    while (cur->next() != nullptr) {
+        TNode<T>* next = cur->next();
+        cur->next(prev);
+        if (next == _head) {
+            return true;
+        }
+        prev = cur;
+        cur = next;
+    }
+    return false;
+}
+
+template <class T>
+long int Tlist<T>::test_time_algorithm_rabbit_turtle() noexcept {
+    auto start = std::chrono::high_resolution_clock::now();
+    bool has_cycle_rabbit_turtle = this->check_cycle_rabbit_turtle();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration_rabbit_turtle = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    return duration_rabbit_turtle;
+}
+
+template <class T>
+long int Tlist<T>::test_time_algorithm_reverse_list() noexcept {
+    auto start = std::chrono::high_resolution_clock::now();
+    bool has_cycle_reverse_list = this->check_cycle_reverse_list();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration_reverse_list = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    return duration_reverse_list;
+}
